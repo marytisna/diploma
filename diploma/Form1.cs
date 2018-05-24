@@ -24,9 +24,20 @@ namespace diploma
         {
             InitializeComponent();
             _id = id;
+            route = new Routes(id);
+            sqlConnection.Open();
+            SqlCommand getTheSightseens = new SqlCommand("SELECT NAME FROM Sightseens", sqlConnection);
+            SqlDataReader sqlDataReader = null;
+            sqlDataReader = getTheSightseens.ExecuteReader();
+            while (sqlDataReader.Read())
+            {
+                comboBox1.Items.Add(sqlDataReader.GetValue(0));
+            }
+            sqlDataReader.Close();
+            sqlConnection.Close();
         }
-
-
+        Routes route;
+        SqlConnection sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["diploma.Properties.Settings.KyivCityGuideDBConnectionString"].ConnectionString);
         private void AddSightseen(Panel parent, Sightseen sightseen)
         {
             Panel p = new Panel();
@@ -70,16 +81,14 @@ namespace diploma
             //string connectionString = ConfigurationManager.ConnectionStrings["diploma.Properties.Settings.KyivCityGuideDBConnectionString"].ConnectionString;
             //sqlConnection = new SqlConnection(connectionString);
             //sqlConnection.Open();
-
-            Routes route1 = new Routes(_id);
-            for(int i=0; i<route1.Sightseens.Count; i++)
+            for (int i = route.Sightseens.Count-1; i >=0; i--)
             {
-                AddSightseen(panel1, route1.Sightseens[i]);
+                AddSightseen(panel1, route.Sightseens[i]);
             }
-            pictureBox1.ImageLocation = route1.Image;
-            label1.Text = route1.Name;
-            label4.Text = route1.Description;
-            
+            pictureBox1.ImageLocation = route.Image;
+            label1.Text = route.Name;
+            label4.Text = route.Description;
+
 
             //    LoadRouteImage("2");
             //    LoadRouteName("2");
@@ -106,8 +115,35 @@ namespace diploma
 
         private void button1_Click(object sender, EventArgs e)
         {
-            //Routes route1 = new Routes(_id);
-            //route1.AddNewSightseen(textBox1.Text, richTextBox1.Text, imagePath);
+            panel1.Controls.Clear();
+            route.AddNewSightseen(textBox1.Text, richTextBox1.Text, imagePath);
+            for (int i = route.Sightseens.Count - 1; i >= 0; i--)
+            {
+                AddSightseen(panel1, route.Sightseens[i]);
+            }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            sqlConnection.Open();
+            int index;
+            string selectedItem = (string)comboBox1.Items[comboBox1.SelectedIndex];
+            SqlCommand getSightseen = new SqlCommand("SELECT ID FROM Sightseens WHERE NAME = @selectedItem", sqlConnection);
+            getSightseen.Parameters.AddWithValue("@selectedItem", selectedItem);
+            index = (int)getSightseen.ExecuteScalar();
+            SqlCommand deleteSightseen = new SqlCommand("DELETE FROM RoutesToSightseens WHERE SightseenID = @SightseenID", sqlConnection);
+            deleteSightseen.Parameters.AddWithValue("@SightseenID", index);
+            deleteSightseen.ExecuteNonQuery();
+            SqlCommand deleteSightseen1 = new SqlCommand("DELETE FROM Sightseens WHERE ID = @SightseenID", sqlConnection);
+            deleteSightseen1.Parameters.AddWithValue("@SightseenID", index);
+            deleteSightseen1.ExecuteNonQuery();
+            sqlConnection.Close();
+            panel1.Controls.Clear();
+            route.LoadSigheseens();
+            for (int i = route.Sightseens.Count - 1; i >= 0; i--)
+            {
+                AddSightseen(panel1, route.Sightseens[i]);
+            }
         }
     }
     //private void LoadRouteImage(string number)

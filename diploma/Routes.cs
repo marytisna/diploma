@@ -28,8 +28,9 @@ namespace diploma
         public List<Sightseen> Sightseens { get { return sightseens; } }
 
         SqlConnection sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["diploma.Properties.Settings.KyivCityGuideDBConnectionString"].ConnectionString);
+        //SqlConnection sqlConnection1 = new SqlConnection(ConfigurationManager.ConnectionStrings["diploma.Properties.Settings.KyivCityGuideDBConnectionString1"].ConnectionString);
 
-       private void LoadRouteImage()
+        private void LoadRouteImage()
         {
             sqlConnection.Open();
             SqlCommand getRouteImageCommand = new SqlCommand("SELECT Image FROM Routes WHERE ID = '" + Id + "'", sqlConnection);
@@ -53,8 +54,9 @@ namespace diploma
             sqlConnection.Close();
         }
 
-        private void LoadSigheseens()
+        public void LoadSigheseens()
         {
+            sightseens.Clear();
             sqlConnection.Open();
             SqlDataReader sqlDataReader = null;
             SqlCommand getImageCommand = new SqlCommand("SELECT Sightseens.ID FROM Sightseens INNER JOIN RoutesToSightseens ON Sightseens.ID = RoutesToSightseens.SightseenID WHERE RoutesToSightseens.RouteID = '" + Id + "'", sqlConnection);
@@ -66,19 +68,26 @@ namespace diploma
             sqlDataReader.Close();
             sqlConnection.Close();
         }
-        //public void AddNewSightseen(string name, string description, string image)
-        //{
-        //    int lastID = 48;
-        //    sqlConnection.Open();
-        //    SqlCommand addNewSightseenCommand = new SqlCommand("INSERT INTO [Sightseens] (ID, Name, Description, Image) VALUES (@ID, @Name, @Description, @Image)", sqlConnection);
-        //    addNewSightseenCommand.Parameters.AddWithValue("ID", lastID);
-        //    addNewSightseenCommand.Parameters.AddWithValue("Name", name);
-        //    addNewSightseenCommand.Parameters.AddWithValue("Description", description);
-        //    addNewSightseenCommand.Parameters.AddWithValue("Image", image);
-        //    addNewSightseenCommand.ExecuteNonQuery();
-        //    sqlConnection.Close();
-        //    lastID++;
+        public void AddNewSightseen(string name, string description, string image)
+        {
+            int lastID;
+            sqlConnection.Open();
+            SqlCommand getlasIDcommand = new SqlCommand("SELECT ID FROM Sightseens WHERE ID = (SELECT MAX(ID) FROM Sightseens)", sqlConnection);
+            lastID = (int)getlasIDcommand.ExecuteScalar();
+            lastID++;
+            SqlCommand addNewSightseenCommand = new SqlCommand("INSERT INTO [Sightseens] (ID, Name, Description, Image) VALUES (@ID, @Name, @Description, @Image)", sqlConnection);
+            addNewSightseenCommand.Parameters.AddWithValue("@ID", lastID);
+            addNewSightseenCommand.Parameters.AddWithValue("@Name", name);
+            addNewSightseenCommand.Parameters.AddWithValue("@Description", description);
+            addNewSightseenCommand.Parameters.AddWithValue("@Image", image);
+            addNewSightseenCommand.ExecuteNonQuery();
+            SqlCommand bindCommand = new SqlCommand("INSERT INTO [RoutesToSightseens](RouteID, SightseenID) VALUES (@RouteID, @SightseenID)", sqlConnection);
+            bindCommand.Parameters.AddWithValue("@RouteID", Convert.ToInt32(Id));
+            bindCommand.Parameters.AddWithValue("@SightseenID", lastID);
+            bindCommand.ExecuteNonQuery();
+            sqlConnection.Close();
+            LoadSigheseens();
 
-        //}
+        }
     }
 }
